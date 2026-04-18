@@ -1,0 +1,265 @@
+```html id="ultragod"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hilda • Ultra Cosmic Experience</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<!-- 🌌 Postprocessing (BLOOM) -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/postprocessing/UnrealBloomPass.js"></script>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: black;
+}
+
+/* cinematic vignette */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 40%, black 100%);
+  z-index: 10;
+}
+</style>
+</head>
+
+<body>
+<div class="vignette"></div>
+
+<script>
+
+/* =========================
+   🎧 SOUND ENGINE (ULTRA)
+========================= */
+const audio = new (window.AudioContext || window.webkitAudioContext)();
+
+function sound(type) {
+  const o = audio.createOscillator();
+  const g = audio.createGain();
+
+  o.connect(g);
+  g.connect(audio.destination);
+
+  if (type === "boom") {
+    o.type = "sawtooth";
+    o.frequency.value = 60;
+    g.gain.value = 0.8;
+  }
+  else if (type === "shimmer") {
+    o.type = "sine";
+    o.frequency.value = 1200 + Math.random()*800;
+    g.gain.value = 0.2;
+  }
+  else {
+    o.type = "triangle";
+    o.frequency.value = 300;
+    g.gain.value = 0.3;
+  }
+
+  o.start();
+  g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + 0.7);
+  o.stop(audio.currentTime + 0.7);
+}
+
+/* =========================
+   🪐 SCENE + CAMERA
+========================= */
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 1000);
+camera.position.z = 70;
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* =========================
+   ✨ BLOOM EFFECT (GLOW)
+========================= */
+const composer = new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene, camera));
+
+const bloom = new THREE.UnrealBloomPass(
+  new THREE.Vector2(innerWidth, innerHeight),
+  1.5, 1, 0.2
+);
+
+composer.addPass(bloom);
+
+/* =========================
+   🌌 GALAXY CORE SPIRAL
+========================= */
+const starCount = 8000;
+const geo = new THREE.BufferGeometry();
+const pos = [];
+
+for (let i = 0; i < starCount; i++) {
+  let angle = i * 0.02;
+  let radius = 5 + i * 0.015;
+
+  pos.push(
+    Math.cos(angle) * radius,
+    (Math.random()-0.5)*30,
+    Math.sin(angle) * radius
+  );
+}
+
+geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+
+const mat = new THREE.PointsMaterial({
+  color: 0xffffff,
+  size: 0.6
+});
+
+const galaxy = new THREE.Points(geo, mat);
+scene.add(galaxy);
+
+/* =========================
+   💖 ENERGY CORE
+========================= */
+const core = new THREE.Mesh(
+  new THREE.SphereGeometry(7, 32, 32),
+  new THREE.MeshBasicMaterial({ color: 0xff4fd8, wireframe: true })
+);
+
+scene.add(core);
+
+/* =========================
+   🎆 FIREWORK SYSTEM
+========================= */
+let particles = [];
+
+function burst(pattern="circle") {
+
+  sound("boom");
+  sound("shimmer");
+
+  for (let i = 0; i < 120; i++) {
+
+    let angle = (i / 120) * Math.PI * 2;
+
+    let vx = Math.cos(angle);
+    let vy = Math.sin(angle);
+    let vz = (Math.random()-0.5);
+
+    if (pattern === "heart") {
+      vx = 16 * Math.pow(Math.sin(angle),3);
+      vy = 13*Math.cos(angle) - 5*Math.cos(2*angle);
+    }
+
+    particles.push({
+      x:0,y:0,z:0,
+      vx,vy,vz,
+      life:100,
+      color: Math.random()
+    });
+  }
+}
+
+/* =========================
+   ✍️ "HILDA" PARTICLE FORMATION
+========================= */
+function spawnText() {
+  let letters = "HILDA";
+
+  for (let i = 0; i < letters.length; i++) {
+    for (let j = 0; j < 50; j++) {
+
+      particles.push({
+        x: (i-2)*8,
+        y: Math.random()*10,
+        z: 0,
+        vx: 0,
+        vy: -0.05,
+        vz: 0,
+        life: 200,
+        color: 1
+      });
+
+    }
+  }
+}
+
+/* =========================
+   🌠 SHOOTING STARS
+========================= */
+let stars = [];
+
+function shootStar() {
+  stars.push({
+    x: (Math.random()-0.5)*100,
+    y: 50,
+    z: (Math.random()-0.5)*50,
+    vx: -2,
+    vy: -2
+  });
+}
+
+/* =========================
+   🎮 INTERACTION
+========================= */
+window.addEventListener("click", ()=>{
+  if (audio.state === "suspended") audio.resume();
+
+  let r = Math.random();
+  if (r < 0.33) burst("circle");
+  else if (r < 0.66) burst("heart");
+  else spawnText();
+});
+
+/* =========================
+   🔁 ANIMATION LOOP
+========================= */
+function animate() {
+  requestAnimationFrame(animate);
+
+  galaxy.rotation.y += 0.001;
+  core.rotation.y += 0.01;
+
+  /* particles */
+  particles.forEach(p=>{
+    p.x += p.vx;
+    p.y += p.vy;
+    p.z += p.vz;
+    p.life--;
+  });
+
+  /* shooting stars */
+  if (Math.random() < 0.02) shootStar();
+
+  stars.forEach(s=>{
+    s.x += s.vx;
+    s.y += s.vy;
+  });
+
+  /* camera pulse */
+  camera.position.x = Math.sin(Date.now()*0.0005)*2;
+  camera.position.y = Math.cos(Date.now()*0.0005)*2;
+
+  composer.render();
+}
+
+animate();
+
+/* =========================
+   📏 RESIZE
+========================= */
+window.addEventListener("resize", ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  composer.setSize(innerWidth, innerHeight);
+});
+
+</script>
+</body>
+</html>
+```
