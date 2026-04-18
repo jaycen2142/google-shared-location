@@ -1,0 +1,256 @@
+```html id="final_evolution"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hilda • Final Evolution Universe</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: radial-gradient(circle at center, #050510, black);
+}
+
+/* soft vignette */
+.vignette {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.9));
+  z-index: 5;
+}
+
+/* UI */
+#ui {
+  position: fixed;
+  inset: 0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:10;
+  pointer-events:none;
+  color:white;
+}
+
+.card {
+  width: 80%;
+  max-width: 750px;
+  padding: 30px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  text-align:center;
+  box-shadow: 0 0 40px rgba(255,0,200,0.2);
+  animation: fadeIn 2s ease forwards;
+  opacity:0;
+  transform: translateY(20px);
+}
+
+@keyframes fadeIn {
+  to { opacity:1; transform: translateY(0); }
+}
+
+h1 { font-size: 2rem; margin-bottom: 10px; }
+p { font-size: 1rem; line-height:1.6; opacity:0.9; }
+</style>
+</head>
+
+<body>
+
+<div class="vignette"></div>
+
+<div id="ui">
+  <div class="card">
+    <h1>Happy 21st Hilda 🎉</h1>
+    <p>
+      This isn’t a page anymore.<br><br>
+
+      It’s a living universe that responds to your presence.<br><br>
+
+      Every movement bends space. Every click creates energy.<br><br>
+
+      💫 You are the center of this system — not the observer.
+    </p>
+  </div>
+</div>
+
+<script>
+
+/* =========================
+   🪐 CORE ENGINE
+========================= */
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
+camera.position.z = 80;
+
+const renderer = new THREE.WebGLRenderer({ antialias:true });
+renderer.setSize(innerWidth, innerHeight);
+document.body.appendChild(renderer.domElement);
+
+/* =========================
+   🌌 GALAXY SYSTEM (OPTIMIZED)
+========================= */
+const COUNT = 7000;
+const geo = new THREE.BufferGeometry();
+
+const pos = new Float32Array(COUNT * 3);
+
+for(let i=0;i<COUNT;i++){
+  let i3 = i*3;
+  let angle = i * 0.02;
+  let radius = 5 + i * 0.008;
+
+  pos[i3]   = Math.cos(angle)*radius;
+  pos[i3+1] = (Math.random()-0.5)*30;
+  pos[i3+2] = Math.sin(angle)*radius;
+}
+
+geo.setAttribute("position", new THREE.BufferAttribute(pos,3));
+
+const galaxy = new THREE.Points(
+  geo,
+  new THREE.PointsMaterial({ size:0.55, color:0xffffff })
+);
+
+scene.add(galaxy);
+
+/* =========================
+   💖 CORE ENERGY
+========================= */
+const core = new THREE.Mesh(
+  new THREE.SphereGeometry(6,32,32),
+  new THREE.MeshBasicMaterial({color:0xff4fd8, wireframe:true})
+);
+
+scene.add(core);
+
+/* =========================
+   🎆 PARTICLE POOL SYSTEM
+========================= */
+let particles = [];
+
+function shockwave(intensity=1){
+  const amount = 50 * intensity;
+
+  for(let i=0;i<amount;i++){
+    let a = Math.random()*Math.PI*2;
+
+    particles.push({
+      x:0,y:0,z:0,
+      vx:Math.cos(a)*(1.5+Math.random()),
+      vy:Math.sin(a)*(1.5+Math.random()),
+      vz:(Math.random()-0.5),
+      life:120
+    });
+  }
+}
+
+/* =========================
+   🌠 SHOOTING STARS
+========================= */
+let comets = [];
+
+function spawnComet(){
+  comets.push({
+    x:(Math.random()-0.5)*120,
+    y:60,
+    z:(Math.random()-0.5)*80,
+    vx:-2.5,
+    vy:-2
+  });
+}
+
+/* =========================
+   🧠 INTERACTION STATE
+========================= */
+let mx = 0, my = 0;
+let shake = 0;
+
+/* 🖱️ MOUSE */
+window.addEventListener("mousemove",(e)=>{
+  mx = (e.clientX/window.innerWidth - 0.5)*2;
+  my = (e.clientY/window.innerHeight - 0.5)*2;
+});
+
+/* 📱 SWIPE / TAP */
+let sx=0, sy=0;
+
+window.addEventListener("touchstart",(e)=>{
+  sx = e.touches[0].clientX;
+  sy = e.touches[0].clientY;
+});
+
+window.addEventListener("touchend",(e)=>{
+  let dx = e.changedTouches[0].clientX - sx;
+  let dy = e.changedTouches[0].clientY - sy;
+
+  let intensity = Math.min(3, Math.abs(dx+dy)/120);
+  shockwave(intensity);
+});
+
+/* 🖱️ CLICK */
+window.addEventListener("click",()=>{
+  shockwave(2);
+});
+
+/* =========================
+   🔁 LOOP (FINAL ENGINE)
+========================= */
+function animate(){
+  requestAnimationFrame(animate);
+
+  /* galaxy motion */
+  galaxy.rotation.y += 0.0008 + mx*0.0015;
+  galaxy.rotation.x += my*0.0008;
+
+  core.rotation.y += 0.01;
+
+  /* particles update */
+  particles.forEach(p=>{
+    p.x += p.vx;
+    p.y += p.vy;
+    p.z += p.vz;
+    p.life--;
+  });
+
+  /* comets */
+  if(Math.random()<0.015) spawnComet();
+
+  comets.forEach(c=>{
+    c.x += c.vx;
+    c.y += c.vy;
+  });
+
+  /* camera physics */
+  camera.position.x += (mx*6 - camera.position.x)*0.04;
+  camera.position.y += (-my*6 - camera.position.y)*0.04;
+
+  if(shake>0){
+    camera.position.x += (Math.random()-0.5)*shake;
+    camera.position.y += (Math.random()-0.5)*shake;
+    shake *= 0.85;
+  }
+
+  renderer.render(scene,camera);
+}
+
+animate();
+
+/* =========================
+   📏 RESIZE SAFE
+========================= */
+window.addEventListener("resize",()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+});
+
+</script>
+</body>
+</html>
+```
